@@ -1,0 +1,21 @@
+{
+    "devices": [
+        {
+            "id": "master",
+            "ip": "192.168.0.100",
+            "port": 4370,
+            "is_master": true
+        },
+        {
+            "id": "device_2",
+            "ip": "192.168.0.101",
+            "port": 4370,
+            "is_master": false
+        }
+    ],
+    "mqtt_broker": "localhost",
+    "mqtt_port": 1883,
+    "mqtt_topic_command": "access_control/command",
+    "mqtt_topic_response": "access_control/response",
+    "mqtt_topic_attendance_response": "access_control/attendance_response"
+}

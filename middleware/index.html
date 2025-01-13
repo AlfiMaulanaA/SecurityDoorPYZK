@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Access Control Management</title>
+    <link
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="mt-5">Access Control Management</h1>
+      <hr />
+      <div class="mt-4">
+        <h5>Response</h5>
+        <div id="alertContainer"></div>
+        <pre id="responseOutput"></pre>
+      </div>
+      <div id="accordion">
+        <div class="card">
+          <div class="card-header" id="headingOne">
+            <h5 class="mb-0">
+              <button
+                class="btn btn-link"
+                data-toggle="collapse"
+                data-target="#collapseOne"
+                aria-expanded="true"
+                aria-controls="collapseOne"
+              >
+                Add User
+              </button>
+            </h5>
+          </div>
+          <div
+            id="collapseOne"
+            class="collapse show"
+            aria-labelledby="headingOne"
+            data-parent="#accordion"
+          >
+            <div class="card-body">
+              <form id="addUserForm">
+                <div class="form-group">
+                  <label for="addUsername">Username</label>
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    id="addUsername"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="addPassword">Password</label>
+                  <input
+                    type="password"
+                    class="form-control form-control-sm"
+                    id="addPassword"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary">
+                  Add User
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" id="headingTwo">
+            <h5 class="mb-0">
+              <button
+                class="btn btn-link collapsed"
+                data-toggle="collapse"
+                data-target="#collapseTwo"
+                aria-expanded="false"
+                aria-controls="collapseTwo"
+              >
+                Edit User
+              </button>
+            </h5>
+          </div>
+          <div
+            id="collapseTwo"
+            class="collapse"
+            aria-labelledby="headingTwo"
+            data-parent="#accordion"
+          >
+            <div class="card-body">
+              <form id="editUserForm">
+                <div class="form-group">
+                  <label for="editUid">UID</label>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    id="editUid"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="editUsername">Username</label>
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    id="editUsername"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="editPassword">Password</label>
+                  <input
+                    type="password"
+                    class="form-control form-control-sm"
+                    id="editPassword"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary">
+                  Edit User
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" id="headingThree">
+            <h5 class="mb-0">
+              <button
+                class="btn btn-link collapsed"
+                data-toggle="collapse"
+                data-target="#collapseThree"
+                aria-expanded="false"
+                aria-controls="collapseThree"
+              >
+                Delete User
+              </button>
+            </h5>
+          </div>
+          <div
+            id="collapseThree"
+            class="collapse"
+            aria-labelledby="headingThree"
+            data-parent="#accordion"
+          >
+            <div class="card-body">
+              <form id="deleteUserForm">
+                <div class="form-group">
+                  <label for="deleteUid">UID</label>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    id="deleteUid"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn btn-sm btn-danger">
+                  Delete User
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" id="headingFour">
+            <h5 class="mb-0">
+              <button
+                class="btn btn-link collapsed"
+                data-toggle="collapse"
+                data-target="#collapseFour"
+                aria-expanded="false"
+                aria-controls="collapseFour"
+              >
+                Update ZKTeco IP
+              </button>
+            </h5>
+          </div>
+          <div
+            id="collapseFour"
+            class="collapse"
+            aria-labelledby="headingFour"
+            data-parent="#accordion"
+          >
+            <div class="card-body">
+              <form id="updateIpForm">
+                <div class="form-group">
+                  <label for="updateIp">New IP</label>
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    id="updateIp"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary">
+                  Update IP
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" id="headingFive">
+            <h5 class="mb-0">
+              <button
+                class="btn btn-link collapsed"
+                data-toggle="collapse"
+                data-target="#collapseFive"
+                aria-expanded="false"
+                aria-controls="collapseFive"
+              >
+                Register Fingerprint
+              </button>
+            </h5>
+          </div>
+          <div
+            id="collapseFive"
+            class="collapse"
+            aria-labelledby="headingFive"
+            data-parent="#accordion"
+          >
+            <div class="card-body">
+              <form id="registerFingerForm">
+                <div class="form-group">
+                  <label for="registerFingerUid">UID</label>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    id="registerFingerUid"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="registerFingerIndex">Finger Index</label>
+                  <select
+                    class="form-control form-control-sm"
+                    id="registerFingerIndex"
+                    required
+                  >
+                    <option value="0">Left Little Finger</option>
+                    <option value="1">Left Ring Finger</option>
+                    <option value="2">Left Middle Finger</option>
+                    <option value="3">Left Index Finger</option>
+                    <option value="4">Left Thumb</option>
+                    <option value="5">Right Thumb</option>
+                    <option value="6">Right Index Finger</option>
+                    <option value="7">Right Middle Finger</option>
+                    <option value="8">Right Ring Finger</option>
+                    <option value="9">Right Little Finger</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary">
+                  Register Fingerprint
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" id="headingSix">
+            <h5 class="mb-0">
+              <button
+                class="btn btn-link collapsed"
+                data-toggle="collapse"
+                data-target="#collapseSix"
+                aria-expanded="false"
+                aria-controls="collapseSix"
+              >
+                Delete Fingerprint
+              </button>
+            </h5>
+          </div>
+          <div
+            id="collapseSix"
+            class="collapse"
+            aria-labelledby="headingSix"
+            data-parent="#accordion"
+          >
+            <div class="card-body">
+              <form id="deleteFingerForm">
+                <div class="form-group">
+                  <label for="deleteFingerUid">UID</label>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    id="deleteFingerUid"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="deleteFingerIndex">Finger Index</label>
+                  <select
+                    class="form-control form-control-sm"
+                    id="deleteFingerIndex"
+                    required
+                  >
+                    <option value="0">Left Little Finger</option>
+                    <option value="1">Left Ring Finger</option>
+                    <option value="2">Left Middle Finger</option>
+                    <option value="3">Left Index Finger</option>
+                    <option value="4">Left Thumb</option>
+                    <option value="5">Right Thumb</option>
+                    <option value="6">Right Index Finger</option>
+                    <option value="7">Right Middle Finger</option>
+                    <option value="8">Right Ring Finger</option>
+                    <option value="9">Right Little Finger</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-sm btn-danger">
+                  Delete Fingerprint
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" id="headingSeven">
+            <h5 class="mb-0">
+              <button
+                class="btn btn-link collapsed"
+                data-toggle="collapse"
+                data-target="#collapseSeven"
+                aria-expanded="false"
+                aria-controls="collapseSeven"
+              >
+                Register Card
+              </button>
+            </h5>
+          </div>
+          <div
+            id="collapseSeven"
+            class="collapse"
+            aria-labelledby="headingSeven"
+            data-parent="#accordion"
+          >
+            <div class="card-body">
+              <form id="registerCardForm">
+                <div class="form-group">
+                  <label for="registerCardUid">UID</label>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    id="registerCardUid"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="registerCard">Card Number</label>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    id="registerCard"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary">
+                  Register Card
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" id="headingEight">
+            <h5 class="mb-0">
+              <button
+                class="btn btn-link collapsed"
+                data-toggle="collapse"
+                data-target="#collapseEight"
+                aria-expanded="false"
+                aria-controls="collapseEight"
+              >
+                Delete Card
+              </button>
+            </h5>
+          </div>
+          <div
+            id="collapseEight"
+            class="collapse"
+            aria-labelledby="headingEight"
+            data-parent="#accordion"
+          >
+            <div class="card-body">
+              <form id="deleteCardForm">
+                <div class="form-group">
+                  <label for="deleteCardUid">UID</label>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    id="deleteCardUid"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn btn-sm btn-danger">
+                  Delete Card
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const mqttBroker = "192.168.0.133";
+      const mqttPort = 9000;
+      const commandTopic = "access_control/command";
+      const responseTopic = "access_control/response";
+      const responseAttendance = "access_control/attendance_response";
+
+      const client = new Paho.MQTT.Client(
+        mqttBroker,
+        mqttPort,
+        "webClient-" + Math.random().toString(16).substr(2, 8)
+      );
+
+      client.onMessageArrived = function (message) {
+        const response = JSON.parse(message.payloadString);
+        document.getElementById("responseOutput").textContent = JSON.stringify(
+          response,
+          null,
+          2
+        );
+
+        const alertContainer = document.getElementById("alertContainer");
+        const alertType =
+          response.response === "success" ? "success" : "danger";
+        const alertMessage = `
+          <div class="alert alert-${alertType} alert-dismissible fade show" role="alert">
+            <strong>${
+              response.response === "success" ? "Success!" : "Error!"
+            }</strong> ${response.command} - ${
+          response.response === "success"
+            ? "Operation completed successfully."
+            : "Operation failed."
+        }
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        `;
+        alertContainer.innerHTML = alertMessage;
+      };
+
+      client.connect({
+        onSuccess: function () {
+          console.log("Connected to MQTT broker");
+          client.subscribe(responseTopic);
+          client.subscribe(responseAttendance);
+        },
+        onFailure: function (message) {
+          console.error("Connection failed: " + message.errorMessage);
+        },
+      });
+
+      document
+        .getElementById("addUserForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const username = document.getElementById("addUsername").value;
+          const password = document.getElementById("addPassword").value;
+          const message = new Paho.MQTT.Message(
+            JSON.stringify({
+              command: "add_user",
+              username: username,
+              password: password,
+            })
+          );
+          message.destinationName = commandTopic;
+          client.send(message);
+        });
+
+      document
+        .getElementById("editUserForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const uid = parseInt(document.getElementById("editUid").value);
+          const username = document.getElementById("editUsername").value;
+          const password = document.getElementById("editPassword").value;
+          const message = new Paho.MQTT.Message(
+            JSON.stringify({
+              command: "edit_user",
+              uid: uid,
+              username: username,
+              password: password,
+            })
+          );
+          message.destinationName = commandTopic;
+          client.send(message);
+        });
+
+      document
+        .getElementById("deleteUserForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const uid = parseInt(document.getElementById("deleteUid").value);
+          const message = new Paho.MQTT.Message(
+            JSON.stringify({ command: "delete_user", uid: uid })
+          );
+          message.destinationName = commandTopic;
+          client.send(message);
+        });
+
+      document
+        .getElementById("updateIpForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const newIp = document.getElementById("updateIp").value;
+          const message = new Paho.MQTT.Message(
+            JSON.stringify({ command: "update_zkteco_ip", zkteco_ip: newIp })
+          );
+          message.destinationName = commandTopic;
+          client.send(message);
+        });
+
+      document
+        .getElementById("registerFingerForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const uid = parseInt(
+            document.getElementById("registerFingerUid").value
+          );
+          const fingerIndex = parseInt(
+            document.getElementById("registerFingerIndex").value
+          );
+          const message = new Paho.MQTT.Message(
+            JSON.stringify({
+              command: "enroll_finger",
+              uid: uid,
+              finger_index: fingerIndex,
+            })
+          );
+          message.destinationName = commandTopic;
+          client.send(message);
+        });
+
+      document
+        .getElementById("deleteFingerForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const uid = parseInt(
+            document.getElementById("deleteFingerUid").value
+          );
+          const fingerIndex = parseInt(
+            document.getElementById("deleteFingerIndex").value
+          );
+          const message = new Paho.MQTT.Message(
+            JSON.stringify({
+              command: "delete_finger",
+              uid: uid,
+              finger_index: fingerIndex,
+            })
+          );
+          message.destinationName = commandTopic;
+          client.send(message);
+        });
+
+      document
+        .getElementById("registerCardForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const uid = parseInt(
+            document.getElementById("registerCardUid").value
+          );
+          const card = parseInt(document.getElementById("registerCard").value);
+          const message = new Paho.MQTT.Message(
+            JSON.stringify({ command: "register_card", uid: uid, card: card })
+          );
+          message.destinationName = commandTopic;
+          client.send(message);
+        });
+
+      document
+        .getElementById("deleteCardForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const uid = parseInt(document.getElementById("deleteCardUid").value);
+          const message = new Paho.MQTT.Message(
+            JSON.stringify({ command: "delete_card", uid: uid })
+          );
+          message.destinationName = commandTopic;
+          client.send(message);
+        });
+    </script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  </body>
+</html>

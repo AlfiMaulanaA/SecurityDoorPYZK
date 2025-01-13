@@ -1,0 +1,9 @@
+{
+    "zkteco_ip": "192.168.1.201",
+    "zkteco_port": 4370,
+    "mqtt_broker": "localhost",
+    "mqtt_port": 1883,
+    "mqtt_topic_command": "access_control/command",
+    "mqtt_topic_response": "access_control/response",
+    "mqtt_topic_attendance_response": "access_control/attendance_response"
+}
