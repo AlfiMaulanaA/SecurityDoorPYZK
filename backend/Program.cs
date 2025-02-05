@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using MQTTnet;
 using MQTTnet.Client;
@@ -7,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+
 
 // Tambahkan layanan ke container
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -169,11 +171,11 @@ app.MapGet("/shapes", async (AppDbContext db) =>
 
 app.MapPost("/shapes", async (AppDbContext db, Shape shape) =>
 {
-
     db.Shapes.Add(shape);
     await db.SaveChangesAsync();
     return Results.Created($"/shapes/{shape.Id}", shape);
 });
+
 
 app.MapPut("/shapes/{id}", async (AppDbContext db, int id, Shape shape) =>
 {
@@ -196,6 +198,10 @@ app.MapPut("/shapes/{id}", async (AppDbContext db, int id, Shape shape) =>
     existingShape.Height = shape.Height ?? existingShape.Height;
     existingShape.Rotation = shape.Rotation ?? existingShape.Rotation;
     existingShape.Name = shape.Name ?? existingShape.Name;
+    existingShape.TopicName = shape.TopicName ?? existingShape.TopicName;
+    existingShape.OutputName = shape.OutputName ?? existingShape.OutputName;
+    existingShape.Key = shape.Key ?? existingShape.Key;
+    existingShape.Value = shape.Value ?? existingShape.Value;
     existingShape.Color = shape.Color ?? existingShape.Color;
     existingShape.BorderColor = shape.BorderColor ?? existingShape.BorderColor;
     existingShape.BorderWidth = shape.BorderWidth ?? existingShape.BorderWidth;
@@ -206,7 +212,6 @@ app.MapPut("/shapes/{id}", async (AppDbContext db, int id, Shape shape) =>
 
     return Results.Ok(existingShape);
 });
-
 
 // Endpoint untuk menghapus shape
 app.MapDelete("/shapes/{id}", async (AppDbContext db, int id) =>
@@ -389,6 +394,314 @@ app.MapGet("/send-whatsapp", async (string phone, string message) =>
     return Results.Ok($"Message '{message}' sent to {phone}");
 });
 
+app.MapGet("/api/topics", async (AppDbContext context) =>
+{
+    return await context.Topics.ToListAsync();
+});
+
+app.MapPost("/api/topics", async (Topic topic, AppDbContext context) =>
+{
+    context.Topics.Add(topic);
+    await context.SaveChangesAsync();
+    return Results.Created($"/api/topics/{topic.Id}", topic);
+});
+app.MapGet("/api/topics/{id}", async (int id, AppDbContext context) =>
+{
+    var topic = await context.Topics.FindAsync(id);
+    if (topic == null)
+    {
+        return Results.NotFound($"Topic with ID {id} not found.");
+    }
+    return Results.Ok(topic);
+});
+
+app.MapPut("/api/topics/{id}", async (int id, Topic updatedTopic, AppDbContext context) =>
+{
+    var topic = await context.Topics.FindAsync(id);
+    if (topic == null)
+    {
+        return Results.NotFound();
+    }
+
+    topic.Name = updatedTopic.Name;
+    topic.TopicName = updatedTopic.TopicName;
+    await context.SaveChangesAsync();
+    return Results.Ok(topic);
+});
+
+app.MapDelete("/api/topics/{id}", async (int id, AppDbContext context) =>
+{
+    var topic = await context.Topics.FindAsync(id);
+    if (topic == null)
+    {
+        return Results.NotFound();
+    }
+
+    context.Topics.Remove(topic);
+    await context.SaveChangesAsync();
+    return Results.NoContent();
+});
+
+// Map endpoints for LayoutGroups
+app.MapGet("/api/layoutgroups", async (AppDbContext context) =>
+{
+    var layoutGroups = await context.LayoutGroups.ToListAsync();
+    return Results.Ok(layoutGroups);
+});
+
+app.MapGet("/api/layoutgroups/{id}", async (int id, AppDbContext context) =>
+{
+    var layoutGroup = await context.LayoutGroups
+        .Include(lg => lg.Shapes)
+        .FirstOrDefaultAsync(lg => lg.Id == id);
+
+    if (layoutGroup == null) return Results.NotFound();
+    return Results.Ok(layoutGroup);
+});
+
+app.MapPost("/api/layoutgroups", async (LayoutGroup layoutGroup, AppDbContext context) =>
+{
+    context.LayoutGroups.Add(layoutGroup);
+    await context.SaveChangesAsync();
+    return Results.Ok(layoutGroup);
+});
+
+app.MapPut("/api/layoutgroups/isuse/{id}", async (int id, LayoutGroup updatedLayoutGroup, AppDbContext context) =>
+{
+    var existingGroup = await context.LayoutGroups.FindAsync(id);
+    if (existingGroup == null) return Results.NotFound();
+
+    // Update the isUse field
+    existingGroup.isUse = updatedLayoutGroup.isUse;
+    context.LayoutGroups.Update(existingGroup);
+    await context.SaveChangesAsync();
+
+    return Results.Ok(existingGroup);
+});
+
+
+app.MapPut("/api/layoutgroups/{id}", async (int id, LayoutGroup updatedLayoutGroup, AppDbContext context) =>
+{
+    var existingGroup = await context.LayoutGroups.FindAsync(id);
+    if (existingGroup == null) return Results.NotFound();
+
+    existingGroup.Name = updatedLayoutGroup.Name;
+    existingGroup.isUse = updatedLayoutGroup.isUse;
+    await context.SaveChangesAsync();
+    return Results.Ok(existingGroup);
+});
+
+app.MapDelete("/api/layoutgroups/{id}", async (int id, AppDbContext context) =>
+{
+    var existingGroup = await context.LayoutGroups.FindAsync(id);
+    if (existingGroup == null) return Results.NotFound();
+
+    context.LayoutGroups.Remove(existingGroup);
+    await context.SaveChangesAsync();
+    return Results.NoContent();
+});
+
+app.MapGet("/layoutgroups/{layoutGroupId}/shapes", async (AppDbContext db, int layoutGroupId) =>
+{
+    var shapes = await db.Shapes
+        .Where(s => s.LayoutGroupId == layoutGroupId)
+        .ToListAsync();
+
+    if (!shapes.Any())
+    {
+        return Results.NotFound($"No shapes found for LayoutGroupId {layoutGroupId}");
+    }
+
+    return Results.Ok(shapes);
+});
+
+app.MapPost("/api/layoutgroups/{id}/upload-image", async (int id, HttpRequest request, AppDbContext context) =>
+{
+    var layoutGroup = await context.LayoutGroups.FindAsync(id);
+    if (layoutGroup == null)
+    {
+        return Results.NotFound("LayoutGroup not found.");
+    }
+
+    // Read the image file from the request
+    var formFile = request.Form.Files.FirstOrDefault();
+    if (formFile == null || formFile.Length == 0)
+    {
+        return Results.BadRequest("No image file provided.");
+    }
+
+    using var memoryStream = new MemoryStream();
+    await formFile.CopyToAsync(memoryStream);
+
+    // Save the image data to the database
+    layoutGroup.ImageData = memoryStream.ToArray();
+    await context.SaveChangesAsync();
+
+    return Results.Ok("Image uploaded successfully.");
+});
+
+
+app.MapGet("/api/layoutgroups/{id}/image", async (int id, AppDbContext context) =>
+{
+    var layoutGroup = await context.LayoutGroups.FindAsync(id);
+    if (layoutGroup == null || layoutGroup.ImageData == null)
+    {
+        return Results.NotFound("Image not found.");
+    }
+
+    return Results.File(layoutGroup.ImageData, "image/jpeg"); // Or "image/png" based on your images
+});
+
+
+app.MapGet("/dashboard/shapes", async (AppDbContext db) =>
+{
+    var shapes = await db.Shapes
+        .Include(s => s.LayoutGroup)
+        .Where(s => s.LayoutGroup.isUse == true)
+        .Select(s => new ShapeDto
+        {
+            Id = s.Id,
+            Name = s.Name,
+            TopicId = s.TopicId,
+            TopicName = s.TopicName,
+            OutputName = s.OutputName,
+            Key = s.Key,
+            Value = s.Value,
+            ShapeType = s.ShapeType,
+            FillColor = s.FillColor,
+            Color = s.Color,
+            Border = s.Border,
+            BorderColor = s.BorderColor,
+            BorderWidth = s.BorderWidth,
+            Width = s.Width,
+            Height = s.Height,
+            Rotation = s.Rotation,
+            X = s.X,
+            Y = s.Y
+        })
+        .ToListAsync();
+
+    if (!shapes.Any())
+    {
+        return Results.NotFound("No shapes found for LayoutGroups with isUse = true.");
+    }
+
+    return Results.Ok(shapes);
+});
+
+
+// Map CRUD APIs for ContainerRack
+app.MapGet("/containerRacks", async (AppDbContext db) =>
+{
+    var containerRacks = await db.ContainerRacks.Include(c => c.DeviceRacks).ToListAsync();
+    return Results.Ok(containerRacks);
+});
+
+app.MapGet("/containerRacks/{id}", async (int id, AppDbContext db) =>
+{
+    var containerRack = await db.ContainerRacks.Include(c => c.DeviceRacks).FirstOrDefaultAsync(c => c.Id == id);
+    return containerRack == null ? Results.NotFound() : Results.Ok(containerRack);
+});
+
+app.MapPost("/containerRacks", async (ContainerRack containerRack, AppDbContext db) =>
+{
+    db.ContainerRacks.Add(containerRack);
+    await db.SaveChangesAsync();
+    return Results.Created($"/containerRacks/{containerRack.Id}", containerRack);
+});
+
+app.MapPut("/containerRacks/{id}", async (int id, ContainerRack updatedContainerRack, AppDbContext db) =>
+{
+    var containerRack = await db.ContainerRacks.Include(c => c.DeviceRacks).FirstOrDefaultAsync(c => c.Id == id);
+    if (containerRack == null) return Results.NotFound();
+
+    containerRack.RackName = updatedContainerRack.RackName;
+    containerRack.Topic = updatedContainerRack.Topic;
+    containerRack.HeightPercentage = updatedContainerRack.HeightPercentage;
+    containerRack.DeviceRacks = updatedContainerRack.DeviceRacks;
+
+    await db.SaveChangesAsync();
+    return Results.Ok(containerRack);
+});
+
+app.MapDelete("/containerRacks/{id}", async (int id, AppDbContext db) =>
+{
+    var containerRack = await db.ContainerRacks.FindAsync(id);
+    if (containerRack == null) return Results.NotFound();
+
+    db.ContainerRacks.Remove(containerRack);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
+app.MapGet("/deviceRacks/byContainer/{containerRackId}", async (int containerRackId, AppDbContext db) =>
+{
+    var deviceRacks = await db.DeviceRacks
+        .Where(d => d.ContainerRackId == containerRackId)
+        .ToListAsync();
+
+    if (!deviceRacks.Any())
+    {
+        return Results.NotFound($"No devices found for ContainerRackId {containerRackId}");
+    }
+
+    return Results.Ok(deviceRacks);
+});
+
+
+app.MapGet("/deviceRacks", async (AppDbContext db) =>
+{
+    var deviceRacks = await db.DeviceRacks.Include(d => d.ContainerRack).ToListAsync();
+    return Results.Ok(deviceRacks);
+});
+
+app.MapGet("/deviceRacks/{id}", async (int id, AppDbContext db) =>
+{
+    var deviceRack = await db.DeviceRacks.Include(d => d.ContainerRack).FirstOrDefaultAsync(d => d.Id == id);
+    return deviceRack == null ? Results.NotFound() : Results.Ok(deviceRack);
+});
+
+app.MapPost("/deviceRacks", async (DeviceRack deviceRack, AppDbContext db) =>
+{
+    var totalUsedU = await db.DeviceRacks
+        .Where(d => d.ContainerRackId == deviceRack.ContainerRackId)
+        .SumAsync(d => d.TotalU);
+
+    if (totalUsedU + deviceRack.TotalU > 42)
+    {
+        return Results.BadRequest("Not enough space in the rack!");
+    }
+
+    db.DeviceRacks.Add(deviceRack);
+    await db.SaveChangesAsync();
+    return Results.Created($"/deviceRacks/{deviceRack.Id}", deviceRack);
+});
+
+app.MapPut("/deviceRacks/{id}", async (int id, DeviceRack updatedDeviceRack, AppDbContext db) =>
+{
+    var deviceRack = await db.DeviceRacks.FindAsync(id);
+    if (deviceRack == null) return Results.NotFound();
+
+    deviceRack.Name = updatedDeviceRack.Name;
+    deviceRack.Position = updatedDeviceRack.Position;
+    deviceRack.TotalU = updatedDeviceRack.TotalU;
+    deviceRack.Person = updatedDeviceRack.Person;
+    deviceRack.Customer = updatedDeviceRack.Customer;
+
+    await db.SaveChangesAsync();
+    return Results.Ok(deviceRack);
+});
+
+app.MapDelete("/deviceRacks/{id}", async (int id, AppDbContext db) =>
+{
+    var deviceRack = await db.DeviceRacks.FindAsync(id);
+    if (deviceRack == null) return Results.NotFound();
+
+    db.DeviceRacks.Remove(deviceRack);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
 // Jalankan aplikasi
 app.Run();
 
@@ -400,9 +713,49 @@ public class AppDbContext : DbContext
     public DbSet<Fingerprint> Fingerprints { get; set; }
     public DbSet<AttendanceRecord> Attendances { get; set; }
     public DbSet<Shape> Shapes { get; set; }
+    public DbSet<Topic> Topics { get; set; }
     public DbSet<Device> Devices { get; set; }
+    public DbSet<LayoutGroup> LayoutGroups { get; set; }
     public DbSet<Maintenance> Maintenances { get; set; }
+    public DbSet<ContainerRack> ContainerRacks { get; set; }
+    public DbSet<DeviceRack> DeviceRacks { get; set; }
+
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Shape>()
+            .HasOne(s => s.LayoutGroup)
+            .WithMany(lg => lg.Shapes)
+            .HasForeignKey(s => s.LayoutGroupId)
+            .OnDelete(DeleteBehavior.Cascade); // Atur perilaku penghapusan relasi
+    }
 }
+
+public class ContainerRack
+{
+    public int Id { get; set; }
+    public string RackName { get; set; } = string.Empty;
+    public string Topic { get; set; } = string.Empty;
+    public int HeightPercentage { get; set; }
+    public List<DeviceRack> DeviceRacks { get; set; }
+}
+
+public class DeviceRack
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Position { get; set; }
+    public int TotalU { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(7);
+    public string Person { get; set; }
+    public string Customer { get; set; }
+    public int ContainerRackId { get; set; }
+
+    [JsonIgnore]
+    public ContainerRack ContainerRack { get; set; }
+}
+
+
 
 public class User
 {
@@ -419,7 +772,6 @@ public class Fingerprint
     public int Id { get; set; }
     public int UID { get; set; }
     public int FingerIndex { get; set; }
-    // Additional properties can be added if needed
 }
 
 public class AttendanceRecord
@@ -436,10 +788,17 @@ public class AttendanceData
     public string Username { get; set; }
     public string Timestamp { get; set; }
 }
+
 public class Shape
 {
     public int Id { get; set; }
     public string? Name { get; set; }
+    public int? TopicId { get; set; }
+    public Topic? Topic { get; set; }
+    public string? TopicName { get; set; }
+    public string? OutputName { get; set; }
+    public string? Key { get; set; }
+    public string? Value { get; set; }
     public string? ShapeType { get; set; } // 'rec', 'circle', 'line', etc.
     public bool? FillColor { get; set; } // Whether the shape is filled with color or not
     public string? Color { get; set; } // Fill color
@@ -447,13 +806,56 @@ public class Shape
     public string? BorderColor { get; set; } // Border color
     public int? BorderWidth { get; set; }
     public int? Width { get; set; } // Width of the shape (only for rectangle or line)
+    public int? Rotation { get; set; } // Rotation angle in degrees
     public int? Height { get; set; } // Height of the shape (only for rectangle)
     public int? X { get; set; } // X position of the shape
     public int? Y { get; set; } // Y position of the shape
-    public int? Rotation { get; set; } // Rotation angle in degrees
+    public int? LayoutGroupId { get; set; }
+    [JsonIgnore]
+    public LayoutGroup LayoutGroup { get; set; }
+}
+
+public class ShapeDto
+{
+    public int Id { get; set; }
+    public string? Name { get; set; }
+    public int? TopicId { get; set; }
+    public string? TopicName { get; set; }
+    public string? OutputName { get; set; }
+    public string? Key { get; set; }
+    public string? Value { get; set; }
+    public string? ShapeType { get; set; }
+    public bool? FillColor { get; set; }
+    public string? Color { get; set; }
+    public bool? Border { get; set; }
+    public string? BorderColor { get; set; }
+    public int? BorderWidth { get; set; }
+    public int? Width { get; set; }
+    public int? Height { get; set; }
+    public int? Rotation { get; set; }
+    public int? X { get; set; }
+    public int? Y { get; set; }
 }
 
 
+public class LayoutGroup
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public bool? isUse { get; set; }
+    public byte[]? ImageData { get; set; }
+
+    [JsonIgnore]
+    public ICollection<Shape> Shapes { get; set; }
+}
+
+
+public class Topic
+{
+    public int Id { get; set; }
+    public string? Name { get; set; }
+    public string? TopicName { get; set; }
+}
 
 public class Device
 {
@@ -484,6 +886,7 @@ public class BroadcastMessageRequest
 {
     public string Message { get; set; }
 }
+
 
 
 namespace MyWhatsappProject.src

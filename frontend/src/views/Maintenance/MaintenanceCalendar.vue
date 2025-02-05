@@ -297,11 +297,11 @@
 
             <!-- Edit Maintenance Modal -->
             <div class="modal fade" id="periodMaintenanceModal" tabindex="-1"
-                aria-labelledby="editMaintenanceModalLabel" aria-hidden="true">
+                aria-labelledby="periodMaintenanceModalLabel" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="editMaintenanceModalLabel">
+                            <h5 class="modal-title" id="periodMaintenanceModalLabel">
                                 Add Period Maintenance
                             </h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

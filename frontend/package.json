@@ -13,11 +13,18 @@
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
     "chart.js": "^4.4.7",
+    "d3": "^7.9.0",
     "font-awesome": "^4.7.0",
+    "gasp": "^0.0.2",
+    "gsap": "^3.12.7",
     "paho-mqtt": "^1.1.0",
     "sweetalert2": "^11.15.10",
+    "three": "^0.172.0",
+    "troika-three-text": "^0.52.3",
     "vue": "^3.5.13",
+    "vue-multiselect": "^3.2.0",
     "vue-router": "4",
+    "vue-select": "^3.20.3",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

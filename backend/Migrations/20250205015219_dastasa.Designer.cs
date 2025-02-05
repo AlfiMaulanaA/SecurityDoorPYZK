@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250113071634_mtcs")]
-    partial class mtcs
+    [Migration("20250205015219_dastasa")]
+    partial class dastasa
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -40,6 +40,28 @@ namespace backend.Migrations
                     b.ToTable("Attendances");
                 });
 
+            modelBuilder.Entity("ContainerRack", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("HeightPercentage")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RackName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Topic")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ContainerRacks");
+                });
+
             modelBuilder.Entity("Device", b =>
                 {
                     b.Property<int>("Id")
@@ -55,6 +77,44 @@ namespace backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Devices");
+                });
+
+            modelBuilder.Entity("DeviceRack", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ContainerRackId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Customer")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Person")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TotalU")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContainerRackId");
+
+                    b.ToTable("DeviceRacks");
                 });
 
             modelBuilder.Entity("Fingerprint", b =>
@@ -77,6 +137,27 @@ namespace backend.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Fingerprints");
+                });
+
+            modelBuilder.Entity("LayoutGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("ImageData")
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool?>("isUse")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LayoutGroups");
                 });
 
             modelBuilder.Entity("Maintenance", b =>
@@ -139,13 +220,31 @@ namespace backend.Migrations
                     b.Property<int?>("Height")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("LayoutGroupId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OutputName")
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("Rotation")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("ShapeType")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("TopicId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TopicName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Value")
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("Width")
@@ -159,7 +258,28 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("LayoutGroupId");
+
+                    b.HasIndex("TopicId");
+
                     b.ToTable("Shapes");
+                });
+
+            modelBuilder.Entity("Topic", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TopicName")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Topics");
                 });
 
             modelBuilder.Entity("User", b =>
@@ -188,6 +308,17 @@ namespace backend.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("DeviceRack", b =>
+                {
+                    b.HasOne("ContainerRack", "ContainerRack")
+                        .WithMany("DeviceRacks")
+                        .HasForeignKey("ContainerRackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ContainerRack");
+                });
+
             modelBuilder.Entity("Fingerprint", b =>
                 {
                     b.HasOne("User", null)
@@ -208,6 +339,32 @@ namespace backend.Migrations
                     b.Navigation("Device");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Shape", b =>
+                {
+                    b.HasOne("LayoutGroup", "LayoutGroup")
+                        .WithMany("Shapes")
+                        .HasForeignKey("LayoutGroupId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Topic", "Topic")
+                        .WithMany()
+                        .HasForeignKey("TopicId");
+
+                    b.Navigation("LayoutGroup");
+
+                    b.Navigation("Topic");
+                });
+
+            modelBuilder.Entity("ContainerRack", b =>
+                {
+                    b.Navigation("DeviceRacks");
+                });
+
+            modelBuilder.Entity("LayoutGroup", b =>
+                {
+                    b.Navigation("Shapes");
                 });
 
             modelBuilder.Entity("User", b =>
